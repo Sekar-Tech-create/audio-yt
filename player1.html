@@ -2,20 +2,13 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
-    #player-box { position: fixed; top: -70px; left: -70px; width: 200px; height: 200px; opacity: 0.05; pointer-events: none; }
-    #tap-area { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 99; cursor: pointer; background: transparent; }
-  </style>
+  <style>* { margin: 0; padding: 0; } body { background: #000; overflow: hidden; }</style>
 </head>
 <body>
-  <div id="player-box"><div id="p"></div></div>
-  <div id="tap-area" onclick="toggleAudio()"></div>
-
+  <div id="p"></div>
   <script src="https://youtube.com"></script>
   <script>
-    let player = null, ready = false, playing = false;
+    let player = null, ready = false;
     const v = new URLSearchParams(location.search).get('v') || '0IJVTLaX0J8';
 
     function onYouTubeIframeAPIReady() {
@@ -29,38 +22,20 @@
             ready = true;
             e.target.unMute();
             e.target.setVolume(100);
-          },
-          onStateChange: (e) => {
-            if (e.data === YT.PlayerState.ENDED) {
-              playing = false;
-              parent.postMessage({ ytState: 'paused' }, '*');
-            }
           }
         }
       });
     }
 
-    function toggleAudio() {
-      if (!ready || !player) return;
-      if (!playing) {
+    window.addEventListener('message', (e) => {
+      if (!ready || !player || !e.data) return;
+      if (e.data.cmd === 'play') {
         player.unMute();
         player.setVolume(100);
         player.playVideo();
-        playing = true;
-        parent.postMessage({ ytState: 'playing' }, '*');
-      } else {
-        player.pauseVideo();
-        playing = false;
-        parent.postMessage({ ytState: 'paused' }, '*');
       }
-    }
-
-    window.addEventListener('message', (e) => {
-      if (!ready || !player || !e.data) return;
       if (e.data.cmd === 'pause') {
         player.pauseVideo();
-        playing = false;
-        parent.postMessage({ ytState: 'paused' }, '*');
       }
       if (e.data.cmd === 'seek') {
         player.seekTo(Math.max(0, (player.getCurrentTime() || 0) + e.data.sec), true);
