@@ -1,59 +1,21 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
-    #p { position: fixed; inset: 0; width: 100%; height: 100%; opacity: 0.05; }
-    #btn { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 99; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <div id="p"></div>
-  <div id="btn" onclick="tapPlay()"></div>
+<body style="margin:0;background:#000;overflow:hidden">
+<iframe id="yt" width="250" height="250" style="border:0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<script>
+  const v = new URLSearchParams(location.search).get('v') || '6GJYrT-EwDg';
+  const f = document.getElementById('yt');
 
-  <script src="https://youtube.com"></script>
-  <script>
-    let player = null, ready = false, playing = false;
-    const v = new URLSearchParams(location.search).get('v') || '0IJVTLaX0J8';
-
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('p', {
-        height: '200', width: '200', videoId: v,
-        playerVars: { autoplay: 0, controls: 0, playsinline: 1, rel: 0 },
-        events: {
-          onReady: (e) => { ready = true; e.target.unMute(); e.target.setVolume(100); },
-          onStateChange: (e) => {
-            if (e.data === YT.PlayerState.ENDED) {
-              playing = false;
-              parent.postMessage({ ytState: 'paused' }, '*');
-            }
-          }
-        }
-      });
+  window.addEventListener('message', (e) => {
+    if (!e.data) return;
+    if (e.data.cmd === 'play') {
+      const s = Math.max(0, Math.floor(e.data.sec || 0));
+      f.src = `https://youtube.com{v}?autoplay=1&start=${s}&playsinline=1&rel=0`;
     }
-
-    function tapPlay() {
-      if (!ready || !player) return;
-      if (!playing) {
-        player.unMute();
-        player.setVolume(100);
-        player.playVideo();
-        playing = true;
-        parent.postMessage({ ytState: 'playing' }, '*');
-      } else {
-        player.pauseVideo();
-        playing = false;
-        parent.postMessage({ ytState: 'paused' }, '*');
-      }
+    if (e.data.cmd === 'pause') {
+      f.src = '';
     }
-
-    window.addEventListener('message', (e) => {
-      if (!ready || !player || !e.data) return;
-      if (e.data.cmd === 'pause') { player.pauseVideo(); playing = false; parent.postMessage({ ytState: 'paused' }, '*'); }
-      if (e.data.cmd === 'seek') { player.seekTo(Math.max(0, (player.getCurrentTime() || 0) + e.data.sec), true); }
-    });
-  </script>
+  });
+</script>
 </body>
 </html>
